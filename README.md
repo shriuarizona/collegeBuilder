@@ -67,6 +67,7 @@ I stress-tested against a range of student profiles across regions, interests, a
 ## Running it locally
 
 npm install
+
 npx vercel dev
 
 
