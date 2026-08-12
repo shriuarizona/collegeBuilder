@@ -72,6 +72,7 @@ npx vercel dev
 
 
 You'll need a `.env` file in the project root with your own Groq key formatted like this:
+
 GROQ_API_KEY=your_key_here
 
 Groq also gives free API keys at console.groq.com. The first time you run `npx vercel dev` it will ask a few setup questions like which account or project to link to. 
