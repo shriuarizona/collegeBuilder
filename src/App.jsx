@@ -11,33 +11,48 @@ function App() {
   const [studentInfo, setStudentInfo] = useState(null)
   const [showingMore, setShowingMore] = useState(false)
 
+  // used to scroll down to the results once they're ready
   const resultsRef = useRef(null)
 
   async function handleClick() {
     setLoading(true)
 
-    const response = await fetch("/api/extract", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: description })
-    })
+    try {
+      // send the counselor's text to backend which calls groq
+      const response = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: description })
+      })
 
-    const info = await response.json()
-    setStudentInfo(info)
-
-    const results = matchColleges(info, 10)
-    setColleges(results)
-    setShowingMore(false)
-    setLoading(false)
-
-    setTimeout(function () {
-      if (resultsRef.current) {
-        resultsRef.current.scrollIntoView({ behavior: "smooth" })
+      if (!response.ok) {
+        throw new Error("extraction failed")
       }
-    }, 100)
+
+      const info = await response.json()
+      setStudentInfo(info)
+
+      // run matching logic on the extracted data start with 10 schools
+      const results = matchColleges(info, 10)
+      setColleges(results)
+      setShowingMore(false)
+
+      // small delay so the results have rendered before we scroll to them
+      setTimeout(function () {
+        if (resultsRef.current) {
+          resultsRef.current.scrollIntoView({ behavior: "smooth" })
+        }
+      }, 100)
+    } catch (error) {
+      // something went wrong with groq or the network, let the user know instead of hanging forever
+      alert("Something went wrong generating the list. Try again.")
+    }
+
+    setLoading(false)
   }
 
   function handleShowMore() {
+    // reuse the same student info we already have just ask for 20 schools instead of 10
     const results = matchColleges(studentInfo, 20)
     setColleges(results)
     setShowingMore(true)
@@ -74,6 +89,7 @@ function App() {
         {loading ? "Generating..." : "Generate College List"}
       </button>
 
+      {/* only show results once we actually have some */}
       {colleges.length > 0 && (
         <div className="results" ref={resultsRef}>
           <h2>Recommended Colleges</h2>
@@ -82,6 +98,7 @@ function App() {
             <div key={index} className="college-card">
               <div className="college-card-top">
                 <h3>{school["school.name"]}</h3>
+                {/* reach, target, or safety badge, colored differently in the css */}
                 <span className={"badge badge-" + school.tier}>{school.tier}</span>
               </div>
               <p>{school["school.city"]}, {school["school.state"]}</p>
@@ -90,6 +107,7 @@ function App() {
           ))}
 
           <div className="action-row">
+            {/* hide this button once they've already clicked it, since 20 is the max */}
             {!showingMore && (
               <button onClick={handleShowMore}>Show More Options</button>
             )}
